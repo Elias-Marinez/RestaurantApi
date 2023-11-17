@@ -3,6 +3,7 @@ using AutoMapper;
 using Restaurant.Core.Application.Dtos;
 using Restaurant.Core.Application.Interfaces.Repository;
 using Restaurant.Core.Application.Interfaces.Services;
+using System.Linq.Expressions;
 
 namespace Restaurant.Core.Application.Services
 {
@@ -51,9 +52,9 @@ namespace Restaurant.Core.Application.Services
             return result;
         }
 
-        public virtual async Task<List<Response>> GetWithAll()
+        public virtual async Task<List<Response>> GetWithAll(params Expression<Func<Entity, object>>[] includes)
         {
-            var entities = await _repository.GetAllWithIncludeAsync();
+            var entities = await _repository.GetAllWithIncludeAsync(includes);
             List<Response> result = _mapper.Map<List<Response>>(entities);
 
             return result;

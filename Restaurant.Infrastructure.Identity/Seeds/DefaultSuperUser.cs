@@ -11,8 +11,8 @@ namespace Restaurant.Infrastructure.Identity.Seeds
         {
             ApplicationUser defaultUser = new()
             {
-                UserName = "administratoruser",
-                Email = "administratoruser@email.com",
+                UserName = "superuser",
+                Email = "superuser@email.com",
                 FirstName = "Jihn",
                 LastName = "Doe",
                 EmailConfirmed = true,

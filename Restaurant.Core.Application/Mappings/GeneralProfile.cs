@@ -22,6 +22,7 @@ namespace Restaurant.Core.Application.Mappings
 
             CreateMap<Ingredient, IngredientUpdRequest>()
                 .ReverseMap()
+                .ForMember(x => x.IngredientId, opt => opt.Ignore())
                 .ForMember(x => x.CreatedAt, opt => opt.Ignore())
                 .ForMember(x => x.LastModifiedAt, opt => opt.Ignore());
 
@@ -33,15 +34,19 @@ namespace Restaurant.Core.Application.Mappings
 
             #region Dish
             CreateMap<Dish, DishRequest>()
-                .ForMember(x => x.Ingredients, opt => opt.Ignore())
+                .ForMember(x => x.Category, opt => opt.MapFrom(src => (DishCategory)src.CategoryId))
+                .ForMember(x => x.Ingredients, opt => opt.MapFrom(src => src.Ingredients.Select(i => i.IngredientId)))
                 .ReverseMap()
                 .ForMember(x => x.DishId, opt => opt.Ignore())
+                .ForMember(x => x.CategoryId, opt => opt.MapFrom(src => (int)src.Category))
                 .ForMember(x => x.Ingredients, opt => opt.Ignore())
                 .ForMember(x => x.CreatedAt, opt => opt.Ignore())
-                .ForMember(x => x.LastModifiedAt, opt => opt.Ignore()); ;
+                .ForMember(x => x.LastModifiedAt, opt => opt.Ignore());
 
             CreateMap<Dish, DishUpdRequest>()
+                .ForMember(x => x.Ingredients, opt => opt.MapFrom(src => src.Ingredients.Select(i => i.IngredientId)))
                 .ReverseMap()
+                .ForMember(x => x.DishId, opt => opt.Ignore())
                 .ForMember(x => x.CreatedAt, opt => opt.Ignore())
                 .ForMember(x => x.LastModifiedAt, opt => opt.Ignore());
 

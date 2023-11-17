@@ -1,16 +1,11 @@
 ﻿
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Restaurant.Core.Application.Dtos.Account;
 using Restaurant.Core.Application.Enums;
 using Restaurant.Core.Application.Interfaces.Services;
-using Restaurant.Core.Domain.Settings;
 using Restaurant.Infrastructure.Identity.Entities;
+using Restaurant.Infrastructure.Identity.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace Restaurant.Infrastructure.Identity.Services
 {
@@ -18,17 +13,15 @@ namespace Restaurant.Infrastructure.Identity.Services
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly JWTSettings _jwtSettings;
+        private readonly IJwtService _jwtService;
 
-        public AccountService(
-              UserManager<ApplicationUser> userManager,
-              SignInManager<ApplicationUser> signInManager,
-              IOptions<JWTSettings> jwtSettings
-            )
+        public AccountService(UserManager<ApplicationUser> userManager,
+                              SignInManager<ApplicationUser> signInManager,
+                              IJwtService jwtService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
-            _jwtSettings = jwtSettings.Value;
+            _jwtService = jwtService;
         }
         public async Task<AuthenticationResponse> AuthenticateAsync(AuthenticationRequest request)
         {
@@ -51,30 +44,19 @@ namespace Restaurant.Infrastructure.Identity.Services
                 return response;
             }
 
-            if (!user.EmailConfirmed)
-            {
-                response.HasError = true;
-                response.Error = $"Cuenta no confirmada para {request.UserName}";
-                return response;
-            }
-
-            JwtSecurityToken jwtSecurityToken = await GenerateJWToken(user);
+            JwtSecurityToken token = await _jwtService.GenerateJWToken(user);
 
             response.Id = user.Id;
             response.Email = user.Email;
             response.UserName = user.UserName;
-
-            var rolesList = await _userManager.GetRolesAsync(user).ConfigureAwait(false);
-
-            response.Roles = rolesList.ToList();
-            response.JWToken = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
-            var refreshToken = GenerateRefreshToken();
-            response.RefreshToken = refreshToken.Token;
+            response.JWToken = new JwtSecurityTokenHandler().WriteToken(token);
+            response.RefreshToken = _jwtService.GenerateRefreshToken().Token;
+            var roles = await _userManager.GetRolesAsync(user).ConfigureAwait(false);
+            response.Roles = roles.ToList();
 
             return response;
         }
-
-        public async Task<RegisterResponse> RegisterUserAsync(RegisterRequest request)
+        public async Task<RegisterResponse> RegisterAdministratorAsync(RegisterRequest request)
         {
             RegisterResponse response = new();
 
@@ -105,13 +87,7 @@ namespace Restaurant.Infrastructure.Identity.Services
             var result = await _userManager.CreateAsync(user, request.Password);
             if (result.Succeeded)
             {
-                foreach (var role in request.Roles)
-                {
-                    if (Enum.TryParse<Roles>(role, out var enumValue))
-                    {
-                        await _userManager.AddToRoleAsync(user, enumValue.ToString());
-                    }
-                }
+                await _userManager.AddToRoleAsync(user, Roles.Administrator.ToString());
             }
             else
             {
@@ -122,65 +98,51 @@ namespace Restaurant.Infrastructure.Identity.Services
 
             return response;
         }
+        public async Task<RegisterResponse> RegisterWaiterAsync(RegisterRequest request)
+        {
+            RegisterResponse response = new();
 
+            var userWithSameUserName = await _userManager.FindByNameAsync(request.UserName);
+            if (userWithSameUserName != null)
+            {
+                response.HasError = true;
+                response.Error = $"Nombre de Usuario '{request.UserName}' ya ha sido tomado.";
+                return response;
+            }
+
+            var userWithSameEmail = await _userManager.FindByEmailAsync(request.Email);
+            if (userWithSameEmail != null)
+            {
+                response.HasError = true;
+                response.Error = $"Email '{request.Email}' ya ha sido registrado.";
+                return response;
+            }
+
+            var user = new ApplicationUser
+            {
+                Email = request.Email,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                UserName = request.UserName
+            };
+
+            var result = await _userManager.CreateAsync(user, request.Password);
+            if (result.Succeeded)
+            {
+                await _userManager.AddToRoleAsync(user, Roles.Waiter.ToString());
+            }
+            else
+            {
+                response.HasError = true;
+                response.Error = $"Ha ocurrido un error al registrar el usuario";
+                return response;
+            }
+
+            return response;
+        }
         public async Task SignOutAsync()
         {
             await _signInManager.SignOutAsync();
         }
-
-        #region Jwt Security
-        private async Task<JwtSecurityToken> GenerateJWToken(ApplicationUser user)
-        {
-            var userClaims = await _userManager.GetClaimsAsync(user);
-            var roles = await _userManager.GetRolesAsync(user);
-
-            var roleClaims = new List<Claim>();
-
-            foreach (var role in roles)
-            {
-                roleClaims.Add(new Claim("roles", role));
-            }
-
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub,user.UserName),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(JwtRegisteredClaimNames.Email,user.Email),
-                new Claim("uid", user.Id)
-            }
-            .Union(userClaims)
-            .Union(roleClaims);
-
-            var symmectricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
-            var signingCredetials = new SigningCredentials(symmectricSecurityKey, SecurityAlgorithms.HmacSha256);
-
-            var jwtSecurityToken = new JwtSecurityToken(
-                issuer: _jwtSettings.Issuer,
-                audience: _jwtSettings.Audience,
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes),
-                signingCredentials: signingCredetials);
-
-            return jwtSecurityToken;
-        }
-
-        private RefreshToken GenerateRefreshToken()
-        {
-            return new RefreshToken
-            {
-                Token = RandomTokenString(),
-                Expires = DateTime.UtcNow.AddDays(7),
-                Created = DateTime.UtcNow
-            };
-        }
-        private string RandomTokenString()
-        {
-            using var rngCryptoServiceProvider = new RNGCryptoServiceProvider();
-            var ramdomBytes = new byte[40];
-            rngCryptoServiceProvider.GetBytes(ramdomBytes);
-
-            return BitConverter.ToString(ramdomBytes).Replace("-", "");
-        }
-        #endregion
     }
 }

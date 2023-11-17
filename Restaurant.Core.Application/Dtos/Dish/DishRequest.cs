@@ -9,6 +9,6 @@ namespace Restaurant.Core.Application.Dtos.Dish
         public decimal Price { get; set; }
         public int Capacity { get; set; }
         public DishCategory Category { get; set; }
-        public ICollection<String>? Ingredients { get; set; }
+        public ICollection<int>? Ingredients { get; set; }
     }
 }

@@ -8,9 +8,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Restaurant.Core.Application.Dtos.Account;
+using Restaurant.Core.Application.Interfaces.Services;
 using Restaurant.Core.Domain.Settings;
 using Restaurant.Infrastructure.Identity.Context;
 using Restaurant.Infrastructure.Identity.Entities;
+using Restaurant.Infrastructure.Identity.Interfaces;
+using Restaurant.Infrastructure.Identity.Services;
 using System.Text;
 
 namespace Restaurant.Infrastructure.Identity
@@ -73,19 +76,25 @@ namespace Restaurant.Infrastructure.Identity
                         c.HandleResponse();
                         c.Response.StatusCode = 401;
                         c.Response.ContentType = "application/json";
-                        var result = JsonConvert.SerializeObject(new JwtResponse { HasError = true, Error = "No tienes autorización" });
+                        var result = JsonConvert.SerializeObject(new JwtResponse { HasError = true, Error = "You are not Authorized" });
                         return c.Response.WriteAsync(result);
                     },
                     OnForbidden = c =>
                     {
                         c.Response.StatusCode = 403;
                         c.Response.ContentType = "application/json";
-                        var result = JsonConvert.SerializeObject(new JwtResponse { HasError = true, Error = "No tienes autorización para acceder a este recurso" });
+                        var result = JsonConvert.SerializeObject(new JwtResponse { HasError = true, Error = "You are not Authorized to access this resource" });
                         return c.Response.WriteAsync(result);
                     }
                 };
 
             });
+
+            #endregion
+
+            #region Services
+            services.AddTransient<IAccountService, AccountService>();
+            services.AddTransient<IJwtService, JwtService>();
 
             #endregion
         }

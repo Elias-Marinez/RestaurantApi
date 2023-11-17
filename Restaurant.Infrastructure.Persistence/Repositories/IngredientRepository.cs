@@ -13,5 +13,18 @@ namespace Restaurant.Infrastructure.Persistence.Repositories
         {
             _dbContext = dbContext;
         }
+
+        public override async Task<Ingredient>? UpdateAsync(Ingredient entity, int id)
+        {
+            Ingredient entry = await _dbContext.Ingredients.FindAsync(id);
+
+            if (entry != null)
+            {
+                entry.Name = entity.Name;
+                await _dbContext.SaveChangesAsync();
+            }
+                
+            return entry;
+        }
     }
 }

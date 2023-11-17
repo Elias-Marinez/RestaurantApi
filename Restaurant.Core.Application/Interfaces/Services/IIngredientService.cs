@@ -6,5 +6,6 @@ namespace Restaurant.Core.Application.Interfaces.Services
 {
     public interface IIngredientService : IGenericService<IngredientResponse, IngredientRequest, IngredientUpdRequest, Ingredient>
     {
+
     }
 }

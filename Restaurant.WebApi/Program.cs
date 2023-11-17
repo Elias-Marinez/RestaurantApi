@@ -5,6 +5,7 @@ using Restaurant.Core.Application;
 using Microsoft.AspNetCore.Identity;
 using Restaurant.Infrastructure.Identity.Seeds;
 using Restaurant.Infrastructure.Identity.Entities;
+using Restaurant.WebApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,13 @@ builder.Services.AddIdentityLayer(builder.Configuration);
 builder.Services.AddApplicationLayer();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHealthChecks();
+builder.Services.AddSwaggerExtension();
+builder.Services.AddApiVersioningExtension();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession();
+
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 var app = builder.Build();
 
@@ -52,8 +60,18 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
+app.UseSwaggerExtension();
+app.UseHealthChecks("/health");
+app.UseSession();
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
 
 app.Run();

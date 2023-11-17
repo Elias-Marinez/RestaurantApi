@@ -6,7 +6,8 @@ namespace Restaurant.Core.Application.Interfaces.Services
     public interface IAccountService
     {
         Task<AuthenticationResponse> AuthenticateAsync(AuthenticationRequest request);
-        Task<RegisterResponse> RegisterUserAsync(RegisterRequest request);
+        Task<RegisterResponse> RegisterAdministratorAsync(RegisterRequest request);
+        Task<RegisterResponse> RegisterWaiterAsync(RegisterRequest request);
         Task SignOutAsync();
     }
 }

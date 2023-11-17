@@ -21,17 +21,6 @@ namespace Restaurant.Infrastructure.Persistence.Repositories
             await _dbContext.SaveChangesAsync();
         }
 
-        public virtual async Task Add(Entity entity, params Expression<Func<Entity, object>>[] includeProperties)
-        {
-            _dbContext.Set<Entity>().Add(entity);
-
-            foreach (var includeProperty in includeProperties)
-            {
-                _dbContext.Entry(entity).Reference(includeProperty).Load();
-            }
-
-            await _dbContext.SaveChangesAsync();
-        }
 
         public virtual async Task<Entity>? UpdateAsync(Entity entity, int id)
         {
@@ -46,23 +35,6 @@ namespace Restaurant.Infrastructure.Persistence.Repositories
             return entry;
         }
 
-        public virtual async Task UpdateAsync<TEntity>(Entity entity, int id, params Expression<Func<Entity, object>>[] includeProperties)
-        {
-            var entry = await _dbContext.Set<Entity>().FindAsync(id);
-
-            if (entry != null)
-            {
-                _dbContext.Entry(entry).CurrentValues.SetValues(entity);
-
-                foreach (var includeProperty in includeProperties)
-                {
-                    _dbContext.Entry(entry).Reference(includeProperty).Load();
-                }
-
-                await _dbContext.SaveChangesAsync();
-            }
-        }
-
         public virtual async Task DeleteAsync(int id)
         {
             var entry = await _dbContext.Set<Entity>().FindAsync(id);
@@ -75,15 +47,13 @@ namespace Restaurant.Infrastructure.Persistence.Repositories
             return await _dbContext.Set<Entity>().ToListAsync();
         }
 
-        public virtual async Task<List<Entity>> GetAllWithIncludeAsync()
+        public virtual async Task<List<Entity>> GetAllWithIncludeAsync(params Expression<Func<Entity, object>>[] includes)
         {
-            var entityProperties = _dbContext.Model.FindEntityType(typeof(Entity)).GetNavigations();
-
             var query = _dbContext.Set<Entity>().AsQueryable();
 
-            foreach (var property in entityProperties)
+            foreach (var include in includes)
             {
-                query = query.Include(property.Name);
+                query = query.Include(include);
             }
 
             return await query.ToListAsync();
