@@ -12,6 +12,5 @@ namespace Restaurant.Core.Domain.Entities
 
         //Navegation Properties
         public ICollection<Order>? Orders { get; set; }
-
     }
 }

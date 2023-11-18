@@ -61,14 +61,23 @@ namespace Restaurant.Core.Application.Mappings
             CreateMap<Table, TableRequest>()
                 .ReverseMap()
                 .ForMember(x => x.TableId, opt => opt.Ignore())
-                .ForMember(x => x.StatusId, opt => opt.Ignore())
+                .ForMember(x => x.StatusId, opt => opt.MapFrom(src => TableStatus.Available))
                 .ForMember(x => x.Orders, opt => opt.Ignore())
                 .ForMember(x => x.CreatedAt, opt => opt.Ignore())
                 .ForMember(x => x.LastModifiedAt, opt => opt.Ignore());
 
             CreateMap<Table, TableUpdRequest>()
                 .ReverseMap()
-                .ForMember(x => x.StatusId, opt => opt.Ignore())
+                .ForMember(x => x.TableId, opt => opt.Ignore())
+                .ForMember(x => x.Orders, opt => opt.Ignore())
+                .ForMember(x => x.CreatedAt, opt => opt.Ignore())
+                .ForMember(x => x.LastModifiedAt, opt => opt.Ignore());
+
+            CreateMap<Table, TableStatusRequest>()
+                .ReverseMap()
+                .ForMember(x => x.TableId, opt => opt.Ignore())
+                .ForMember(x => x.Description, opt => opt.Ignore())
+                .ForMember(x => x.Capacity, opt => opt.Ignore())
                 .ForMember(x => x.Orders, opt => opt.Ignore())
                 .ForMember(x => x.CreatedAt, opt => opt.Ignore())
                 .ForMember(x => x.LastModifiedAt, opt => opt.Ignore());
@@ -81,17 +90,13 @@ namespace Restaurant.Core.Application.Mappings
             #endregion
 
             #region Order
-            CreateMap<Order, OrderRequest>()
-                .ReverseMap()
-                .ForMember(x => x.OrderId, opt => opt.Ignore())
-                .ForMember(x => x.CreatedAt, opt => opt.Ignore())
-                .ForMember(x => x.LastModifiedAt, opt => opt.Ignore());
+            CreateMap<OrderRequest, Order>()
+                .ForMember(x => x.Dishes, opt => opt.Ignore());
 
             CreateMap<Order, OrderUpdRequest>()
                 .ReverseMap()
                 .ForMember(x => x.Table, opt => opt.Ignore())
                 .ForMember(x => x.TableId, opt => opt.Ignore())
-                .ForMember(x => x.SubTotal, opt => opt.Ignore())
                 .ForMember(x => x.CreatedAt, opt => opt.Ignore())
                 .ForMember(x => x.LastModifiedAt, opt => opt.Ignore());
 
@@ -100,6 +105,9 @@ namespace Restaurant.Core.Application.Mappings
                 .ReverseMap()
                 .ForMember(x => x.CreatedAt, opt => opt.Ignore())
                 .ForMember(x => x.LastModifiedAt, opt => opt.Ignore());
+
+            CreateMap<Table, TableOrderResponse>()
+                .ForMember(x => x.Orders, opt => opt.MapFrom(src => src.Orders));
             #endregion
         }
     }

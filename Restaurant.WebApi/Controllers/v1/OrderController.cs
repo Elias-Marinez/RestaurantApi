@@ -1,29 +1,28 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Restaurant.Core.Application.Dtos.Table;
+using Restaurant.Core.Application.Dtos.Order;
 using Restaurant.Core.Application.Interfaces.Services;
 using Restaurant.WebApi.Controllers.Core;
 
 namespace Restaurant.WebApi.Controllers.v1
 {
     [ApiVersion("1.0")]
-    [Authorize(Roles = "Administrator, Waiter")]
-    public class TableController : BaseApiController
+    [Authorize(Roles = "Waiter")]
+    public class OrderController : BaseApiController
     {
-        public ITableService _service;
+        private readonly IOrderService _service;
 
-        public TableController(ITableService service)
+        public OrderController(IOrderService service)
         {
             _service = service;
         }
 
-        [Authorize(Roles = "Administrator")]
         [HttpPost("Create")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult> Create([FromQuery] TableRequest request)
+        public async Task<ActionResult> Create([FromQuery] OrderRequest request)
         {
             try
             {
@@ -32,7 +31,7 @@ namespace Restaurant.WebApi.Controllers.v1
 
                 await _service.Add(request);
 
-                return StatusCode(201, $"The table has been registered.");
+                return StatusCode(201, $"The Order for Table {request.TableId} has been registered.");
             }
             catch (Exception ex)
             {
@@ -40,12 +39,11 @@ namespace Restaurant.WebApi.Controllers.v1
             }
         }
 
-        [Authorize(Roles = "Administrator")]
         [HttpPut("Update")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TableResponse))]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> Put([FromQuery] int id, [FromQuery] TableUpdRequest request)
+        public async Task<IActionResult> Put([FromQuery] int id, [FromQuery] OrderUpdRequest request)
         {
             try
             {
@@ -55,7 +53,7 @@ namespace Restaurant.WebApi.Controllers.v1
                 }
 
                 var result = await _service.Update(request, id);
-                return Ok(result);
+                return NoContent();
             }
             catch (Exception ex)
             {
@@ -64,7 +62,7 @@ namespace Restaurant.WebApi.Controllers.v1
         }
 
         [HttpGet("List")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<TableResponse>))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<OrderResponse>))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Get()
@@ -87,7 +85,7 @@ namespace Restaurant.WebApi.Controllers.v1
         }
 
         [HttpGet("GetById")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TableResponse))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderResponse))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetById([FromQuery] int id)
@@ -108,40 +106,15 @@ namespace Restaurant.WebApi.Controllers.v1
                 return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
         }
-        [Authorize(Roles = "Waiter")]
-        [HttpGet("GetTableOrden")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TableOrderResponse))]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetTableOrden([FromQuery] int id)
-        {
-            try
-            {
-                var result = await _service.GetByIdWithOrder(id);
 
-                if (result == null)
-                {
-                    return NotFound();
-                }
-
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-            }
-        }
-
-        [Authorize(Roles = "Waiter")]
-        [HttpPut("ChangeStatus")]
+        [HttpDelete("Delete")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> ChangeStatus([FromQuery] int id, [FromQuery] TableStatusRequest request)
+        public async Task<IActionResult> Delete([FromQuery] int id)
         {
             try
             {
-                await _service.StatusUpdateAsync(request, id);
-
+                await _service.Delete(id);
                 return NoContent();
             }
             catch (Exception ex)

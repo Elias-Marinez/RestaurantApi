@@ -18,5 +18,20 @@ namespace Restaurant.Core.Application.Services
             _mapper = mapper;
         }
 
+        public async Task StatusUpdateAsync(TableStatusRequest tsr, int id)
+        {
+            Table entity = _mapper.Map<Table>(tsr);
+            await _repository.StatusUpdateAsync(entity, id);
+        }
+
+        public async Task<TableOrderResponse> GetByIdWithOrder(int id)
+        {
+            var result = await _repository.GetByIdWithOrder(id);
+
+            TableOrderResponse response = _mapper.Map<TableOrderResponse>(result);
+            return response;
+        }
+
+
     }
 }
